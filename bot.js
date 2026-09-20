@@ -26,6 +26,13 @@ const MINES_SIZE = 5;
 const MINES_COUNT = 5;
 const MINES_CELL_REWARD = 0.2;
 const CRASH_COEFF_STEP = 0.2;
+const BOT_USERNAME = 'Rraketka_bot';
+const AI_SYSTEM_PROMPT =
+  'Ты — дружелюбный ассистент игрового Telegram-бота "Ракетка". Отвечай кратко, живо и по-русски. ' +
+  'Правила бота: игроки стартуют со 100 ₽. Команды: "баланс" (остаток), "бонус" (раз в 24 часа, 50–500 ₽), ' +
+  '"перевод N" (ответом на сообщение игрока), "мины N" (поле 5×5 с 5 минами, чистая клетка +20% к ставке, есть кнопка "Забрать куш"), ' +
+  '"краш N" (ракета, коэффициент растёт каждую секунду, забери куш до взрыва), "помощь" (справка). ' +
+  'Если просят сыграть — напоминай эти команды.';
 const ROCKET_FRAMES = [
   '🚀',
   '   🚀',
@@ -577,6 +584,65 @@ bot.hears(/^\/setbal\s+(\d+)/i, async (ctx) => {
 
 bot.catch((error, ctx) => {
   console.error('Глобальная ошибка бота:', error && error.message);
+});
+
+const aiBusyChats = new Set();
+
+async function askPollinations(prompt) {
+  const url =
+    'https://text.pollinations.ai/' +
+    encodeURIComponent(prompt.slice(0, 2000)) +
+    '?model=openai&private=true&system=' +
+    encodeURIComponent(AI_SYSTEM_PROMPT);
+  const response = await fetch(url, { signal: AbortSignal.timeout(90000) });
+  if (!response.ok) {
+    throw new Error('Pollinations HTTP ' + response.status);
+  }
+  const answer = await response.text();
+  return answer.trim();
+}
+
+bot.on('text', async (ctx) => {
+  try {
+    const chatType = ctx.chat && ctx.chat.type;
+    const isPrivate = chatType === 'private';
+    const rawText = (ctx.message.text || '').trim();
+    const replyTo = ctx.message.reply_to_message;
+    const isReplyToBot = !!(replyTo && replyTo.from && replyTo.from.is_bot);
+    const myUsername = (ctx.botInfo && ctx.botInfo.username) || BOT_USERNAME;
+    const isMentioned = rawText.toLowerCase().includes('@' + myUsername.toLowerCase());
+    if (!isPrivate && !isMentioned && !isReplyToBot) {
+      return;
+    }
+    if (isPrivate && rawText.length === 0) {
+      return;
+    }
+    let question = rawText;
+    if (!isReplyToBot || isMentioned) {
+      question = rawText.replace(new RegExp('@' + myUsername, 'ig'), '').trim();
+    }
+    if (!question) {
+      await ctx.reply('🤖 Спроси что-нибудь! Например: @' + myUsername + ' как дела?');
+      return;
+    }
+    if (aiBusyChats.has(ctx.chat.id)) {
+      await ctx.reply('🤖 Уже думаю над ответом, секунду!');
+      return;
+    }
+    aiBusyChats.add(ctx.chat.id);
+    try {
+      const answer = await askPollinations(question);
+      const finalAnswer = answer.length > 4000 ? answer.slice(0, 4000) + '\n…' : answer;
+      await ctx.reply(finalAnswer, { reply_to_message_id: ctx.message.message_id }).catch(() => {});
+    } catch (aiError) {
+      console.error('Ошибка ИИ:', aiError.message);
+      await ctx.reply('🤖 ИИ сейчас недоступен. Попробуй чуть позже!').catch(() => {});
+    } finally {
+      aiBusyChats.delete(ctx.chat.id);
+    }
+  } catch (error) {
+    console.error('Ошибка в обработке ИИ:', error);
+  }
 });
 
 function shutdown(signal) {
