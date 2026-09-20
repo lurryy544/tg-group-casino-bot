@@ -629,9 +629,18 @@ bot.on('text', async (ctx) => {
       await ctx.reply('🤖 Уже думаю над ответом, секунду!');
       return;
     }
+    const userName = ctx.from && ctx.from.first_name ? ctx.from.first_name : 'собеседник';
+    let prompt;
+    if (isAdmin(ctx.from.id)) {
+      prompt =
+        'Ты общаешься с владельцем своего бота. Всегда обращайся к нему почтительно и с уважением — «господин». ' +
+        'Будь кратким, живым и естественным.\nСообщение от господина: ' + question;
+    } else {
+      prompt = 'С тобой общается ' + userName + ' (игрок). Обращайся к нему по имени.\nСообщение: ' + question;
+    }
     aiBusyChats.add(ctx.chat.id);
     try {
-      const answer = await askPollinations(question);
+      const answer = await askPollinations(prompt);
       const finalAnswer = answer.length > 4000 ? answer.slice(0, 4000) + '\n…' : answer;
       await ctx.reply(finalAnswer, { reply_to_message_id: ctx.message.message_id }).catch(() => {});
     } catch (aiError) {
