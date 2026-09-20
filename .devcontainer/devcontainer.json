@@ -2,5 +2,8 @@
   "name": "casino-bot",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "postCreateCommand": "npm install",
-  "postStartCommand": "sh -c 'while true; do node bot.js; sleep 5; done'"
+  "postStartCommand": "sh -c 'while true; do node bot.js; sleep 5; done'",
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {}
+  }
 }
