@@ -542,15 +542,25 @@ function shutdown(signal) {
   db.close();
 }
 
-bot
-  .launch()
-  .then(() => {
-    console.log('Казино-бот запущен! Ожидаю сообщения в чатах...');
-  })
-  .catch((error) => {
-    console.error('Ошибка запуска бота:', error.message);
-    process.exit(1);
-  });
+async function main() {
+  const me = await bot.telegram.getMe();
+  const username = me && me.username ? ('@' + me.username) : '';
+  console.log('Бот ' + username + ' подключен к Telegram, запускаю прослушку сообщений...');
+  try {
+    await bot.telegram.sendMessage(
+      ADMIN_ID,
+      '🚀 Казино-бот ' + username + '\nУспешно запущен! Напиши мне: баланс'
+    );
+  } catch (notifyError) {
+    console.error('Не удалось отправить приветствие админу:', notifyError.message);
+  }
+  await bot.launch();
+}
+
+main().catch((error) => {
+  console.error('Ошибка запуска бота:', error.message);
+  process.exit(1);
+});
 
 process.once('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
