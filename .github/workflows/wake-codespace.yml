@@ -12,7 +12,11 @@ jobs:
   wake:
     runs-on: ubuntu-latest
     steps:
-      - name: Wake codespace
+      - name: Wake codespace via API
         env:
           GH_TOKEN: ${{ secrets.CODESPACES_PAT }}
-        run: gh codespace start -c "${{ vars.CODESPACE_NAME }}" 2>&1 || true
+        run: |
+          curl -sS -w "\nHTTP %{http_code}\n" -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/user/codespaces/${{ vars.CODESPACE_NAME }}/start" || true
