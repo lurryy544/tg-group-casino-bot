@@ -2,7 +2,7 @@ const { Telegraf } = require('telegraf');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '8856129829:AAFTrMbC10TMoowrdMfzYH6RS1Vcr_jvJdl';
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const ADMIN_ID = 8264692426;
 const START_BALANCE = 100;
 const BONUS_MIN = 50;
