@@ -1,0 +1,18 @@
+name: Wake Codespace
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake codespace
+        env:
+          GH_TOKEN: ${{ secrets.CODESPACES_PAT }}
+        run: gh codespace start -c "${{ vars.CODESPACE_NAME }}" 2>&1 || true
