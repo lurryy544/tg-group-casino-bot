@@ -1,8 +1,22 @@
 const { Telegraf } = require('telegraf');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
+function readTokenFromFile() {
+  try {
+    const content = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+    const match = content.match(/^\s*BOT_TOKEN\s*=\s*["']?([^"'\r\n]+)/m);
+    if (match) {
+      return match[1].trim();
+    }
+  } catch (fileError) {
+    // файл .env может отсутствовать — это нормально
+  }
+  return '';
+}
+
+const BOT_TOKEN = process.env.BOT_TOKEN || readTokenFromFile();
 const ADMIN_ID = 8264692426;
 const START_BALANCE = 100;
 const BONUS_MIN = 50;
